@@ -178,6 +178,22 @@ async def on_ready():
         await main_coroutine()
 
 
+bot.remove_command('help')
+
+
+@bot.command()
+async def help(ctx):
+    await ctx.send("`!start`, `!stop` - Start and stop the notification.\n"
+                   "`!undergraduate`, `!college`, `!abeek`, `!me`, `!employment` - Turn on and off specific alarms.\n"
+                   "`!도움말` - Korean help.")
+
+
+@bot.command()
+async def 도움말(ctx):
+    await ctx.send("`!시작`, `!종료` - 알람을 시작하고 종료합니다.\n"
+                   "`!학사`, `!단과대`, `!아빅`, `!기계공`, `!취업` - 특정 알람을 끕니다.")
+
+
 @bot.command()
 async def start(ctx):
     if ctx.channel not in channels:
