@@ -19,116 +19,161 @@ options.add_argument("--headless")
 # Post data
 class Post:
 
-    def __init__(self, title, date, link):
+    def __init__(self, title, link):
         self.title = title
-        self.date = date
         self.link = link
 
     def __eq__(self, other):
-        return self.title == other.title and self.date == other.date
+        return self.title == other.title and self.link == other.link
 
 
-async def khu_undergraduate_crawl():
+async def college_crawl():
     data = []
 
     try:
         loop = asyncio.get_event_loop()
 
         # Timeout after 8 seconds of no load
-        req = functools.partial(requests.get, "https://www.khu.ac.kr/kor/notice/list.do?category=UNDERGRADUATE&page=1",
-                                timeout=8)
+        req = functools.partial(requests.get, "http://coe.cau.ac.kr/main/main.php", timeout=8)
         web = await loop.run_in_executor(None, req)
         soup = BeautifulSoup(web.content, "lxml")
-        raw_data = soup.find("table", {"class": "board01"}).find("tbody").find_all("td", {"class": "col02"})
+        raw_data = soup.find("div", {"class": "main-notice board fl"}).ul.find_all("a")
+
         for content in raw_data:
-            # Ignore the Seoul campus mark
-            if content.a.span.text == "서울":
-                continue
-            title = content.a.p.text.strip()
-            link = "https://www.khu.ac.kr/kor/notice/" + content.a.attrs["href"]
-            content = content.find_next_sibling("td", {"class": "col04"})
-            date = int(content.text.replace('-', ''))
-            data.append(Post(title, date, link))
+            data.append(Post(content.text.strip(), "http://coe.cau.ac.kr/main/main.php" + content.attrs["href"]))
 
     except requests.exceptions.Timeout:
-        print("[Timeout] KHUS crawling timeout")
+        print("[Timeout] College crawling timeout")
     except Exception as error:
-        print("[ERROR] KHUS unknown error")
+        print("[ERROR] College error")
         print("Error :", error)
     finally:
         return data
 
 
-async def sw_business_crawl():
+async def abeek_review_crawl():
     data = []
 
     try:
         loop = asyncio.get_event_loop()
 
         # Timeout after 8 seconds of no load
-        req = functools.partial(requests.get, "http://swedu.khu.ac.kr/board5/bbs/board.php?bo_table=06_01", timeout=8)
+        req = functools.partial(requests.get, "https://abeek.cau.ac.kr/", timeout=8)
         web = await loop.run_in_executor(None, req)
         soup = BeautifulSoup(web.content, "lxml")
-        raw_data = soup.find_all("td", {"class": "td_num2"})
-        regex1 = re.compile("종료")
-        regex2 = re.compile("마감")
+        raw_data = soup.find("div", {"class": "review fl"}).find("div", {"class": "cont"}).find_all("a")
 
         for content in raw_data:
-            # TODO: Notice mark identification, not used but can be used
-            # notice = True if content.text.strip() == "공지" else False
-            content = content.find_next_sibling("td", {"class": "td_subject"})
-            # skip if there is an [END] mark
-            if regex1.search(content.a.text.strip()) is not None:
-                continue
-            elif regex2.search(content.a.text.strip()) is not None:
-                continue
-            title = content.a.text.strip()
-            link = content.a.attrs["href"]
-            content = content.find_next_sibling("td", {"class": "td_datetime"})
-            date = int(content.text.replace('-', ''))
-            data.append(Post(title, date, link))
+            # Tricky Preprocessing
+            link = content.attrs["href"].strip()
+            if link[0] == 'w':
+                link = "https://" + link
+            elif link[0] == '/':
+                link = "https://abeek.cau.ac.kr" + link
+            elif link[0] == 'n':
+                link = "https://abeek.cau.ac.kr/" + link
+            data.append(Post(content.text.strip(), link))
 
     except requests.exceptions.Timeout:
-        print("[Timeout] SWB crawling timeout")
+        print("[Timeout] ABEEK Review crawling timeout")
     except Exception as error:
-        print("[ERROR] SWB unknown error")
+        print("[ERROR] ABEEK Review error")
         print("Error :", error)
     finally:
         return data
 
 
-async def sw_college_crawl():
+async def abeek_notice_crawl():
     data = []
 
     try:
         loop = asyncio.get_event_loop()
 
         # Timeout after 8 seconds of no load
-        req = functools.partial(requests.get, "http://software.khu.ac.kr/board5/bbs/board.php?bo_table=05_01",
-                                timeout=8)
+        req = functools.partial(requests.get, "https://abeek.cau.ac.kr/", timeout=8)
         web = await loop.run_in_executor(None, req)
         soup = BeautifulSoup(web.content, "lxml")
-        raw_data = soup.find_all("td", {"class": "td_subject"})
+        raw_data = soup.find("div", {"class": "notice fl"}).find("div", {"class": "cont"}).find_all("a")
 
         for content in raw_data:
-            # TODO: Important mark identification, not used but can be used
-            # important = True if content.text.strip() == "중요" else False
-            title = content.a.text.strip()
-            link = content.a.attrs["href"]
-            content = content.find_next_sibling("td", {"class": "td_datetime"})
-            date = int(content.text.replace('-', ''))
-            data.append(Post(title, date, link))
+            # Tricky Preprocessing
+            link = content.attrs["href"].strip()
+            if link[0] == 'w':
+                link = "https://" + link
+            elif link[0] == '/':
+                link = "https://abeek.cau.ac.kr" + link
+            elif link[0] == 'n':
+                link = "https://abeek.cau.ac.kr/" + link
+            data.append(Post(content.text.strip(), link))
 
     except requests.exceptions.Timeout:
-        print("[Timeout] SWC crawling timeout")
+        print("[Timeout] ABEEK Notice crawling timeout")
     except Exception as error:
-        print("[ERROR] SWC unknown error")
-        print("ERROR :", error)
+        print("[ERROR] ABEEK Notice error")
+        print("Error :", error)
     finally:
         return data
 
 
-async def j_dormitory_crawl():
+async def me_notice_crawl():
+    data = []
+
+    try:
+        loop = asyncio.get_event_loop()
+
+        # Timeout after 8 seconds of no load
+        req = functools.partial(requests.get, "http://me.cau.ac.kr/", timeout=8)
+        web = await loop.run_in_executor(None, req)
+        soup = BeautifulSoup(web.content, "lxml")
+        raw_data = soup.find("div", {"class": "widget-box cont-sub cont1-1"}).find("ul", {"class": "post-list"}).find_all("a")
+
+        for content in raw_data:
+            splitarr = content.text.split('-')
+            title = splitarr[1]
+            for i in range(2, len(splitarr)):
+                title += '-'
+                title += splitarr[i]
+            data.append(Post(title.strip(), content.attrs["href"].strip()))
+
+    except requests.exceptions.Timeout:
+        print("[Timeout] ME Notice crawling timeout")
+    except Exception as error:
+        print("[ERROR] ME Notice error")
+        print("Error :", error)
+    finally:
+        return data
+
+
+async def me_employment_crawl():
+    data = []
+
+    try:
+        loop = asyncio.get_event_loop()
+
+        # Timeout after 8 seconds of no load
+        req = functools.partial(requests.get, "http://me.cau.ac.kr/", timeout=8)
+        web = await loop.run_in_executor(None, req)
+        soup = BeautifulSoup(web.content, "lxml")
+        raw_data = soup.find("div", {"class": "widget-box cont-sub cont1-3"}).find("ul", {"class": "post-list"}).find_all("a")
+
+        for content in raw_data:
+            splitarr = content.text.split('-')
+            title = splitarr[1]
+            for i in range(2, len(splitarr)):
+                title += '-'
+                title += splitarr[i]
+            data.append(Post(title.strip(), content.attrs["href"].strip()))
+
+    except requests.exceptions.Timeout:
+        print("[Timeout] ME Employment crawling timeout")
+    except Exception as error:
+        print("[ERROR] ME Employment error")
+        print("Error :", error)
+    finally:
+        return data
+
+
+async def undergraduate_crawl():
     data = []
 
     try:
@@ -136,70 +181,34 @@ async def j_dormitory_crawl():
         drv = functools.partial(webdriver.Firefox, options=options)
         driver = await loop.run_in_executor(None, drv)
     except Exception as error:
-        print("[ERROR] J_DORMIT selenium firefox driver error")
+        print("[ERROR] Undergraduate selenium firefox driver error")
         print("ERROR :", error)
         return data
 
     try:
         # Timeout after 90 seconds of no load
         driver.set_page_load_timeout(90)
-        await loop.run_in_executor(None, driver.get, "https://dorm2.khu.ac.kr/dorm2/00/0000.kmc")
+        await loop.run_in_executor(None, driver.get, "https://www.cau.ac.kr/cms/FR_CON/index.do?MENU_ID=100#;")
 
         # Waiting for web load to avoid errors
         await asyncio.sleep(2)
 
+        button = await loop.run_in_executor(None, driver.find_element_by_class_name, "btn_search")
+        await loop.run_in_executor(None, button.click)
+        await asyncio.sleep(2)
         soup = BeautifulSoup(driver.page_source, "lxml")
-        raw_data = soup.find("ul", {"id": "board_notice"}).find_all("li")
+        raw_data = soup.find("div", {"class": "lineList_ul  limitOff"}).find_all("a")
 
         for content in raw_data:
-            title = content.a.text.strip()
-            link = "https://dorm2.khu.ac.kr/dorm2/bbs/getBbsWriteView.kmc?bbs_locgbn=K1&bbs_id=notice&seq="
-            link += content.a.attrs["onclick"][8:13]
-            date = int(content.span.text.replace('.', ''))
-            post = Post(title, date, link)
-            data.append(post)
+            
+            data.append(Post(content.text.strip(), link))
 
     except TimeoutException:
-        print("[Timeout] J_DORMIT crawling timeout")
+        print("[Timeout] Undergraduate crawling timeout")
     except Exception as error:
-        print("[ERROR] J_DORMIT unknown error")
+        print("[ERROR] Undergraduate unknown error")
         print("ERROR :", error)
     finally:
         driver.quit()
         return data
 
-
-async def j_meal_crawl():
-    data = []
-
-    try:
-        loop = asyncio.get_event_loop()
-        drv = functools.partial(webdriver.Firefox, options=options)
-        driver = await loop.run_in_executor(None, drv)
-    except Exception as error:
-        print("[ERROR] J_MEAL selenium firefox driver error")
-        print("ERROR :", error)
-        return data
-
-    try:
-        # Timeout after 90 seconds of no load
-        driver.set_page_load_timeout(90)
-        await loop.run_in_executor(None, driver.get, "https://dorm2.khu.ac.kr/dorm2/40/4050.kmc")
-
-        # Waiting for web load to avoid errors
-        await asyncio.sleep(2)
-
-        soup = BeautifulSoup(driver.page_source, "lxml")
-        raw_data = soup.find("li", {"style": "display: list-item;"}).table.find_all("td", {"class": "bb te_left pl15"})
-
-        for content in raw_data:
-            data.append(content.text)
-
-    except TimeoutException:
-        print("[Timeout] J_MEAL crawling timeout")
-    except Exception as error:
-        print("[ERROR] J_MEAL unknown error")
-        print("ERROR :", error)
-    finally:
-        driver.quit()
-        return data

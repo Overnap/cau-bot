@@ -19,158 +19,109 @@ bot = Bot(command_prefix=config["PREFIX"])
 
 channels = []
 channels_option = {}
-khuu_data = []
-j_data = []
-j_meal = []
+college_data = []
+abeek_review_data = []
+abeek_notice_data = []
+me_notice_data = []
+me_employment_data = []
 swb_data = []
 swc_data = []
-check_meal = [False, False, False]
 
 
-async def khu_undergraduate_alert():
-    crawled = await crawl.khu_undergraduate_crawl()
+async def college_alert():
+    crawled = await crawl.college_crawl()
     for post in crawled:
-        exist = any(x == post for x in khuu_data)
+        exist = any(x == post for x in college_data)
         if not exist:
             print("[Main] New Post :", post.title)
             embed = discord.Embed(title=post.title, description=post.link, color=0xEB422E)
-            embed.set_author(name="KHU 학사",
-                             url="https://www.khu.ac.kr/kor/notice/list.do?page=1&category=UNDERGRADUATE",
-                             icon_url="http://www.google.com/s2/favicons?domain=https://www.khu.ac.kr/kor/main/index.do")
-            for channel in channels:
-                if channels_option[channel]["undergraduate"]:
-                    await channel.send(embed=embed)
-            khuu_data.append(post)
-            # Delete old posts for memory management
-            if len(khuu_data) > 20:
-                khuu_data.pop(0)
-
-
-async def sw_business_alert():
-    crawled = await crawl.sw_business_crawl()
-    for post in crawled:
-        exist = any(x == post for x in swb_data)
-        if not exist:
-            print("[Main] New Post :", post.title)
-            embed = discord.Embed(title=post.title, description=post.link, color=0xE060A4)
-            embed.set_author(name="SW 사업단", url="http://swedu.khu.ac.kr/html_2018/",
-                             icon_url="http://www.google.com/s2/favicons?domain=https://www.khu.ac.kr/kor/main/index.do")
-            for channel in channels:
-                if channels_option[channel]["business"]:
-                    await channel.send(embed=embed)
-            swb_data.append(post)
-            # Delete old posts for memory management
-            if len(swb_data) > 30:
-                swb_data.pop(0)
-
-
-async def sw_college_alert():
-    crawled = await crawl.sw_college_crawl()
-    for post in crawled:
-        exist = any(x == post for x in swc_data)
-        if not exist:
-            print("[Main] New Post :", post.title)
-            embed = discord.Embed(title=post.title, description=post.link, color=0xF5D356)
-            embed.set_author(name="SW융합대학", url="http://software.khu.ac.kr/html_2018/",
-                             icon_url="http://www.google.com/s2/favicons?domain=https://www.khu.ac.kr/kor/main/index.do")
+            embed.set_author(name="공과대학",
+                             url="http://coe.cau.ac.kr/main/main.php",
+                             icon_url="http://www.google.com/s2/favicons?domain=http://admission.cau.ac.kr/main.htm")
             for channel in channels:
                 if channels_option[channel]["college"]:
                     await channel.send(embed=embed)
-            swc_data.append(post)
+            college_data.append(post)
             # Delete old posts for memory management
-            if len(swc_data) > 20:
-                swc_data.pop(0)
+            if len(college_data) > 10:
+                college_data.pop(0)
 
 
-async def j_dormitory_alert():
-    crawled = await crawl.j_dormitory_crawl()
+# FIXME: 보도/홍보 별 필요 없는거같은데
+async def abeek_review_alert():
+    crawled = await crawl.abeek_review_crawl()
     for post in crawled:
-        exist = any(x == post for x in j_data)
+        exist = any(x == post for x in abeek_review_data)
         if not exist:
             print("[Main] New Post :", post.title)
-            embed = discord.Embed(title=post.title, description=post.link, color=0x568DF5)
-            embed.set_author(name="제2기숙사", url="https://dorm2.khu.ac.kr/dorm2/",
-                             icon_url="http://www.google.com/s2/favicons?domain=https://www.khu.ac.kr/kor/main/index.do")
+            embed = discord.Embed(title=post.title, description=post.link, color=0xEB422E)
+            embed.set_author(name="ABEEK 보도/홍보",
+                             url="https://abeek.cau.ac.kr/notice/list2.jsp",
+                             icon_url="http://www.google.com/s2/favicons?domain=http://admission.cau.ac.kr/main.htm")
             for channel in channels:
-                if channels_option[channel]["dormitory"]:
+                if channels_option[channel]["abeek_review"]:
                     await channel.send(embed=embed)
-            j_data.append(post)
+            abeek_review_data.append(post)
             # Delete old posts for memory management
-            if len(j_data) > 20:
-                j_data.pop(0)
+            if len(abeek_review_data) > 10:
+                abeek_review_data.pop(0)
 
 
-async def j_meal_alert(t: datetime):
-    # TODO: It would be good to manage diet data for each channel
-    # TODO: Prettify spaghetti code
-    global j_meal
-    global check_meal
-    # Try crawling if it is a new day or do not have data
-    if (4 < t.hour < 6 and check_meal.count(True) == 3) or len(j_meal) == 0:
-        check_meal = [False, False, False]
-        try:
-            j_meal = await crawl.j_meal_crawl()
-            print("[Main] Got meal data")
-        except:
-            j_meal = []
-            print("[ERROR] Cannot get meal data")
-        print("[Main] Today's date :", t.date(), ", day of week :", t.weekday())
-    # Check all if meal time have passed or do not have data
-    if t.hour > 6 and len(j_meal) == 0:
-        print("[Main] No meal data for today!")
-        check_meal = [True, True, True]
-    elif t.hour > 19:
-        check_meal = [True, True, True]
-    # Dinner
-    elif ((t.hour == 17 and t.minute > 5) or t.hour > 17) and not check_meal[2]:
-        check_meal = [True, True, True]
-        embed = discord.Embed(title="제2기숙사", description="석식 메뉴", color=0x59DE6D)
-        embed.set_author(name="오늘의 학식", url="https://dorm2.khu.ac.kr/dorm2/40/4050.kmc",
-                         icon_url="http://www.google.com/s2/favicons?domain=https://www.khu.ac.kr/kor/main/index.do")
-        if t.weekday() == 5 or t.weekday() == 6:
-            # Korean food only on weekends
-            embed.add_field(name="한식", value="없음" if j_meal[2] == '' else j_meal[2], inline=False)
-        else:
-            embed.add_field(name="한식", value="없음" if j_meal[5] == '' else j_meal[5], inline=False)
-            embed.add_field(name="일품", value="없음" if j_meal[6] == '' else j_meal[6], inline=False)
-        print("Dinner")
-        for channel in channels:
-            if channels_option[channel]["meal"]:
-                await channel.send(embed=embed)
-    # Lunch
-    elif ((t.hour == 10 and t.minute > 40) or t.hour > 10) and not check_meal[1]:
-        check_meal = [True, True, False]
-        embed = discord.Embed(title="제2기숙사", description="중식 메뉴", color=0x59DE6D)
-        embed.set_author(name="오늘의 학식", url="https://dorm2.khu.ac.kr/dorm2/40/4050.kmc",
-                         icon_url="http://www.google.com/s2/favicons?domain=https://www.khu.ac.kr/kor/main/index.do")
-        if t.weekday() == 5 or t.weekday() == 6:
-            # Korean food only on weekends
-            embed.add_field(name="한식", value="없음" if j_meal[1] == '' else j_meal[1], inline=False)
-        else:
-            # Lunch has first class 1 and first class 2
-            embed.add_field(name="한식", value="없음" if j_meal[2] == '' else j_meal[2], inline=False)
-            embed.add_field(name="일품1", value="없음" if j_meal[3] == '' else j_meal[3], inline=False)
-            embed.add_field(name="일품2", value="없음" if j_meal[4] == '' else j_meal[4], inline=False)
-        print("Lunch")
-        for channel in channels:
-            if channels_option[channel]["meal"]:
-                await channel.send(embed=embed)
-    # Breakfast
-    elif ((t.hour == 7 and t.minute > 40) or t.hour > 7) and not check_meal[0]:
-        check_meal = [True, False, False]
-        embed = discord.Embed(title="제2기숙사", description="조식 메뉴", color=0x59DE6D)
-        embed.set_author(name="오늘의 학식", url="https://dorm2.khu.ac.kr/dorm2/40/4050.kmc",
-                         icon_url="http://www.google.com/s2/favicons?domain=https://www.khu.ac.kr/kor/main/index.do")
-        if t.weekday() == 5 or t.weekday() == 6:
-            # Korean food only on weekends
-            embed.add_field(name="한식", value="없음" if j_meal[0] == '' else j_meal[0], inline=False)
-        else:
-            embed.add_field(name="한식", value="없음" if j_meal[0] == '' else j_meal[0], inline=False)
-            embed.add_field(name="일품", value="없음" if j_meal[1] == '' else j_meal[1], inline=False)
-        print("Breakfast")
-        for channel in channels:
-            if channels_option[channel]["meal"]:
-                await channel.send(embed=embed)
+async def abeek_notice_alert():
+    crawled = await crawl.abeek_notice_crawl()
+    for post in crawled:
+        exist = any(x == post for x in abeek_notice_data)
+        if not exist:
+            print("[Main] New Post :", post.title)
+            embed = discord.Embed(title=post.title, description=post.link, color=0xE060A4)
+            embed.set_author(name="ABEEK",
+                             url="https://abeek.cau.ac.kr/notice/list.jsp",
+                             icon_url="http://www.google.com/s2/favicons?domain=http://admission.cau.ac.kr/main.htm")
+            for channel in channels:
+                if channels_option[channel]["abeek_notice"]:
+                    await channel.send(embed=embed)
+            abeek_notice_data.append(post)
+            # Delete old posts for memory management
+            if len(abeek_notice_data) > 10:
+                abeek_notice_data.pop(0)
+
+
+async def me_notice_alert():
+    crawled = await crawl.me_notice_crawl()
+    for post in crawled:
+        exist = any(x == post for x in me_notice_data)
+        if not exist:
+            print("[Main] New Post :", post.title)
+            embed = discord.Embed(title=post.title, description=post.link, color=0xF5D356)
+            embed.set_author(name="기계공학과",
+                             url="http://me.cau.ac.kr/bbs/board.php?bo_table=sub5_1",
+                             icon_url="http://www.google.com/s2/favicons?domain=http://admission.cau.ac.kr/main.htm")
+            for channel in channels:
+                if channels_option[channel]["me_notice"]:
+                    await channel.send(embed=embed)
+            me_notice_data.append(post)
+            # Delete old posts for memory management
+            if len(me_notice_data) > 10:
+                me_notice_data.pop(0)
+
+
+async def me_employment_alert():
+    crawled = await crawl.me_employment_crawl()
+    for post in crawled:
+        exist = any(x == post for x in me_employment_data)
+        if not exist:
+            print("[Main] New Post :", post.title)
+            embed = discord.Embed(title=post.title, description=post.link, color=0x59DE6D)
+            embed.set_author(name="기계공학과 취업",
+                             url="http://me.cau.ac.kr/bbs/board.php?bo_table=sub5_3",
+                             icon_url="http://www.google.com/s2/favicons?domain=http://admission.cau.ac.kr/main.htm")
+            for channel in channels:
+                if channels_option[channel]["me_employment"]:
+                    await channel.send(embed=embed)
+            me_employment_data.append(post)
+            # Delete old posts for memory management
+            if len(me_employment_data) > 10:
+                me_employment_data.pop(0)
 
 
 async def main_coroutine():
@@ -188,10 +139,10 @@ async def main_coroutine():
 
         # For debugging, only work with more than one user
         if len(channels) != 0:
-            futures = [asyncio.ensure_future(j_dormitory_alert()), asyncio.ensure_future(khu_undergraduate_alert()),
-                       asyncio.ensure_future(sw_college_alert()), asyncio.ensure_future(sw_business_alert())]
+            futures = [asyncio.ensure_future(me_notice_alert()), asyncio.ensure_future(me_employment_alert()),
+                       asyncio.ensure_future(abeek_notice_alert()), asyncio.ensure_future(college_alert())]
             await asyncio.gather(*futures)
-            await j_meal_alert(t)
+            # TODO: me 사이트에 동시다발적으로 접속하면 막히는 듯 한꺼번에 처리하던가 html을 메모하던가 해서 해결하자
 
         # Record completion time
         print("[Main] Coroutine completed : " + datetime.now(timezone("Asia/Seoul")).strftime("%Y/%m/%d %H:%M:%S"))
@@ -216,10 +167,11 @@ async def start(ctx):
         print("[BOT] The alert started :", ctx.channel)
         if ctx.channel not in channels_option:
             channels_option[ctx.channel] = {"undergraduate": True,
-                                            "business": True,
-                                            "college": True,
-                                            "dormitory": True,
-                                            "meal": True}
+                                            "abeek_review": True,
+                                            "abeek_notice": True,
+                                            "me_notice": True,
+                                            "me_employment": True,
+                                            "college": True}
             print("[BOT] The new channel has been initialized : ", ctx.channel)
         await ctx.send("알리미가 시작되었습니다.")
     else:
@@ -276,32 +228,6 @@ async def college(ctx):
 
 
 @bot.command()
-async def dormitory(ctx):
-    if ctx.channel in channels:
-        if channels_option[ctx.channel]["dormitory"]:
-            channels_option[ctx.channel]["dormitory"] = False
-            await ctx.send("기숙사 알림을 껐습니다.")
-        else:
-            channels_option[ctx.channel]["dormitory"] = True
-            await ctx.send("기숙사 알림을 켰습니다.")
-    else:
-        await ctx.send("먼저 알리미를 실행해야 합니다.")
-
-
-@bot.command()
-async def meal(ctx):
-    if ctx.channel in channels:
-        if channels_option[ctx.channel]["meal"]:
-            channels_option[ctx.channel]["meal"] = False
-            await ctx.send("학식 알림을 껐습니다.")
-        else:
-            channels_option[ctx.channel]["meal"] = True
-            await ctx.send("학식 알림을 켰습니다.")
-    else:
-        await ctx.send("먼저 알리미를 실행해야 합니다.")
-
-
-@bot.command()
 async def 시작(ctx):
     await start(ctx)
 
@@ -314,26 +240,6 @@ async def 종료(ctx):
 @bot.command()
 async def 학사(ctx):
     await undergraduate(ctx)
-
-
-@bot.command()
-async def 사업단(ctx):
-    await business(ctx)
-
-
-@bot.command()
-async def 단과대(ctx):
-    await college(ctx)
-
-
-@bot.command()
-async def 기숙사(ctx):
-    await dormitory(ctx)
-
-
-@bot.command()
-async def 학식(ctx):
-    await meal(ctx)
 
 
 bot.run(config["TOKEN"])
