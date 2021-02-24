@@ -186,10 +186,10 @@ async def start(ctx):
         if ctx.channel not in channels_option:
             channels_option[ctx.channel] = {"undergraduate": True,
                                             "abeek_review": False,
-                                            "abeek_notice": False,
-                                            "me_notice": False,
-                                            "me_employment": False,
-                                            "college": False}
+                                            "abeek_notice": True,
+                                            "me_notice": True,
+                                            "me_employment": True,
+                                            "college": True}
             print("[BOT] The new channel has been initialized : ", ctx.channel)
         await ctx.send("알리미가 시작되었습니다.")
     else:
@@ -220,19 +220,6 @@ async def undergraduate(ctx):
 
 
 @bot.command()
-async def business(ctx):
-    if ctx.channel in channels:
-        if channels_option[ctx.channel]["business"]:
-            channels_option[ctx.channel]["business"] = False
-            await ctx.send("사업단 알림을 껐습니다.")
-        else:
-            channels_option[ctx.channel]["business"] = True
-            await ctx.send("사업단 알림을 켰습니다.")
-    else:
-        await ctx.send("먼저 알리미를 실행해야 합니다.")
-
-
-@bot.command()
 async def college(ctx):
     if ctx.channel in channels:
         if channels_option[ctx.channel]["college"]:
@@ -241,6 +228,45 @@ async def college(ctx):
         else:
             channels_option[ctx.channel]["college"] = True
             await ctx.send("단과대 알림을 켰습니다.")
+    else:
+        await ctx.send("먼저 알리미를 실행해야 합니다.")
+
+
+@bot.command()
+async def abeek(ctx):
+    if ctx.channel in channels:
+        if channels_option[ctx.channel]["abeek_notice"]:
+            channels_option[ctx.channel]["abeek_notice"] = False
+            await ctx.send("ABEEK 알림을 껐습니다.")
+        else:
+            channels_option[ctx.channel]["abeek_notice"] = True
+            await ctx.send("ABEEK 알림을 켰습니다.")
+    else:
+        await ctx.send("먼저 알리미를 실행해야 합니다.")
+
+
+@bot.command()
+async def me(ctx):
+    if ctx.channel in channels:
+        if channels_option[ctx.channel]["me_notice"]:
+            channels_option[ctx.channel]["me_notice"] = False
+            await ctx.send("기계공학과 알림을 껐습니다.")
+        else:
+            channels_option[ctx.channel]["me_notice"] = True
+            await ctx.send("기계공학과 알림을 켰습니다.")
+    else:
+        await ctx.send("먼저 알리미를 실행해야 합니다.")
+
+
+@bot.command()
+async def employment(ctx):
+    if ctx.channel in channels:
+        if channels_option[ctx.channel]["me_employment"]:
+            channels_option[ctx.channel]["me_employment"] = False
+            await ctx.send("기계공학과 취업 알림을 껐습니다.")
+        else:
+            channels_option[ctx.channel]["me_employment"] = True
+            await ctx.send("기계공학과 취업 알림을 켰습니다.")
     else:
         await ctx.send("먼저 알리미를 실행해야 합니다.")
 
@@ -258,6 +284,26 @@ async def 종료(ctx):
 @bot.command()
 async def 학사(ctx):
     await undergraduate(ctx)
+
+
+@bot.command()
+async def 단과대(ctx):
+    await college(ctx)
+
+
+@bot.command()
+async def 아빅(ctx):
+    await abeek(ctx)
+
+
+@bot.command()
+async def 기계공(ctx):
+    await me(ctx)
+
+
+@bot.command()
+async def 취업(ctx):
+    await employment(ctx)
 
 
 bot.run(config["TOKEN"])
