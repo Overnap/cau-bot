@@ -19,13 +19,30 @@ bot = Bot(command_prefix=config["PREFIX"])
 
 channels = []
 channels_option = {}
+undergraduate_data = []
 college_data = []
 abeek_review_data = []
 abeek_notice_data = []
 me_notice_data = []
 me_employment_data = []
-swb_data = []
-swc_data = []
+
+
+async def undergraduate_alert():
+    crawled = await crawl.undergraduate_crawl()
+    for post in crawled:
+        exist = any(x == post for x in undergraduate_data)
+        if not exist:
+            print("[Main] New Post :", post.title)
+            embed = discord.Embed(title=post.title, description=post.link, color=0x568DF5)
+            embed.set_author(name="CAU 학사", url="https://www.cau.ac.kr/index.do",
+                             icon_url="http://www.google.com/s2/favicons?domain=http://admission.cau.ac.kr/main.htm")
+            for channel in channels:
+                if channels_option[channel]["undergraduate"]:
+                    await channel.send(embed=embed)
+            undergraduate_data.append(post)
+            # Delete old posts for memory management
+            if len(undergraduate_data) > 20:
+                undergraduate_data.pop(0)
 
 
 async def college_alert():
@@ -140,7 +157,8 @@ async def main_coroutine():
         # For debugging, only work with more than one user
         if len(channels) != 0:
             futures = [asyncio.ensure_future(me_notice_alert()), asyncio.ensure_future(me_employment_alert()),
-                       asyncio.ensure_future(abeek_notice_alert()), asyncio.ensure_future(college_alert())]
+                       asyncio.ensure_future(abeek_notice_alert()), asyncio.ensure_future(college_alert()),
+                       asyncio.ensure_future(undergraduate_alert())]
             await asyncio.gather(*futures)
             # TODO: me 사이트에 동시다발적으로 접속하면 막히는 듯 한꺼번에 처리하던가 html을 메모하던가 해서 해결하자
 
@@ -167,11 +185,11 @@ async def start(ctx):
         print("[BOT] The alert started :", ctx.channel)
         if ctx.channel not in channels_option:
             channels_option[ctx.channel] = {"undergraduate": True,
-                                            "abeek_review": True,
-                                            "abeek_notice": True,
-                                            "me_notice": True,
-                                            "me_employment": True,
-                                            "college": True}
+                                            "abeek_review": False,
+                                            "abeek_notice": False,
+                                            "me_notice": False,
+                                            "me_employment": False,
+                                            "college": False}
             print("[BOT] The new channel has been initialized : ", ctx.channel)
         await ctx.send("알리미가 시작되었습니다.")
     else:

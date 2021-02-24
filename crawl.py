@@ -191,17 +191,19 @@ async def undergraduate_crawl():
         await loop.run_in_executor(None, driver.get, "https://www.cau.ac.kr/cms/FR_CON/index.do?MENU_ID=100#;")
 
         # Waiting for web load to avoid errors
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
         button = await loop.run_in_executor(None, driver.find_element_by_class_name, "btn_search")
         await loop.run_in_executor(None, button.click)
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
+
         soup = BeautifulSoup(driver.page_source, "lxml")
-        raw_data = soup.find("div", {"class": "lineList_ul  limitOff"}).find_all("a")
+        raw_data = soup.find("ul", {"id": "tbody"}).find_all("div", {"class": "txtL"})
 
         for content in raw_data:
-            
-            data.append(Post(content.text.strip(), link))
+            link = "https://www.cau.ac.kr/cms/FR_CON/BoardView.do?MENU_ID=100&BBS_SEQ="
+            link += content.a.attrs["href"].split('\'')[1]
+            data.append(Post(content.a.text.strip(), link))
 
     except TimeoutException:
         print("[Timeout] Undergraduate crawling timeout")
